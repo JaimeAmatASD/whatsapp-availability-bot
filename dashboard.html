@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Bot Dashboard</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f0f2f5;color:#111;padding-bottom:40px}
+
+.container{max-width:1020px;margin:24px auto;padding:0 18px}
+.card{background:#fff;border-radius:14px;padding:18px;box-shadow:0 1px 4px rgba(0,0,0,.07)}
+.card-title{font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;color:#aaa;margin-bottom:12px;font-weight:700}
+
+/* TOP BAR */
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;background:#fff;border-radius:14px;box-shadow:0 1px 4px rgba(0,0,0,.07);margin-bottom:8px;gap:12px;flex-wrap:wrap}
+.status-label{font-size:.95rem;font-weight:600;display:flex;align-items:center;gap:8px}
+.dot{width:9px;height:9px;border-radius:50%;display:inline-block}
+.dot.on{background:#25d366}.dot.off{background:#e74c3c}
+.topbar-right{display:flex;align-items:center;gap:12px}
+.month-counter{background:#f0f2f5;border-radius:10px;padding:6px 14px;font-size:.82rem;color:#555;font-weight:600}
+.month-counter span{color:#128c7e;font-size:1.1rem;font-weight:700;margin-right:4px}
+
+/* INACTIVE BANNER */
+.inactive-banner{background:#fff8e1;border:1px solid #ffe082;border-radius:10px;padding:10px 16px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;font-size:.85rem;color:#7a5c00}
+.inactive-banner strong{font-weight:700}
+.inactive-banner.hidden{display:none}
+
+button{border:none;border-radius:8px;padding:7px 16px;font-size:.82rem;cursor:pointer;font-weight:600;transition:opacity .15s}
+button:hover{opacity:.82}
+.btn-off{background:#fef0f0;color:#c0392b}
+.btn-on{background:#edfff4;color:#1a7a40}
+.btn-hoy-on{background:#fff8e1;color:#b26a00;border:2px solid #ffcc02}
+.btn-hoy-off{background:#f0f2f5;color:#999;border:2px solid transparent}
+
+/* MAIN GRID */
+.main-grid{display:grid;grid-template-columns:1fr 340px;gap:14px;margin-bottom:14px}
+@media(max-width:700px){.main-grid{grid-template-columns:1fr}}
+.col-right{display:flex;flex-direction:column;gap:14px}
+
+/* LEGEND */
+.legend{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.legend-item{display:flex;align-items:center;gap:4px;font-size:.7rem;color:#555}
+.legend-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0}
+.legend-dot.template{background:#d4f0d9;border:2px solid #25d366}
+.legend-dot.custom{background:#cce8ff;border:2px solid #2196f3}
+.legend-dot.blocked{background:#fdd;border:2px solid #e74c3c}
+.legend-dot.inactive{background:#f0f0f0;border:2px solid #ddd}
+.legend-dot.nodisp{background:#e8e0f8;border:2px solid #9575cd}
+
+/* CALENDAR */
+.cal-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.cal-nav span{font-size:.92rem;font-weight:700}
+.cal-nav button{background:#f0f2f5;color:#333;padding:5px 11px}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:8px}
+.cal-hdr{text-align:center;font-size:.58rem;font-weight:700;color:#bbb;padding:3px 0;text-transform:uppercase}
+.cal-cell{aspect-ratio:1;border-radius:7px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:.8rem;font-weight:600;cursor:pointer;transition:transform .1s;border:2px solid transparent;position:relative;user-select:none;gap:1px}
+.cal-cell.template{background:#d4f0d9;color:#1a7a40;border-color:#25d366}
+.cal-cell.template:hover{background:#b8e8c0}
+.cal-cell.custom{background:#cce8ff;color:#1565c0;border-color:#2196f3}
+.cal-cell.custom:hover{background:#b3d9ff}
+.cal-cell.blocked{background:#fdd;color:#c0392b;border-color:#e74c3c;text-decoration:line-through}
+.cal-cell.blocked:hover{background:#fcc}
+.cal-cell.inactive{background:#f5f5f5;color:#ccc;border-color:#eee}
+.cal-cell.inactive:hover{background:#eee;color:#aaa}
+.cal-cell.nodisp{background:#e8e0f8;color:#7c5cbf;border-color:#9575cd}
+.cal-cell.empty{background:transparent;border:none;cursor:default}
+.cal-cell.past{opacity:.3;cursor:default;pointer-events:none}
+.cal-cell.selected{box-shadow:0 0 0 3px #128c7e}
+.cal-cell.today::after{content:'';position:absolute;bottom:3px;left:50%;transform:translateX(-50%);width:4px;height:4px;border-radius:50%;background:currentColor}
+.slot-badge{font-size:.48rem;font-weight:700;background:rgba(0,0,0,.15);border-radius:4px;padding:0 3px;line-height:1.4;color:inherit}
+
+/* DAY PANEL */
+.day-panel{background:#f8fffe;border:2px solid #128c7e;border-radius:12px;padding:14px;margin-top:10px}
+.day-panel-title{font-size:.9rem;font-weight:700;color:#128c7e;margin-bottom:12px}
+.radio-group{display:flex;flex-direction:column;gap:9px;margin-bottom:12px}
+.radio-row{display:flex;align-items:center;gap:9px;font-size:.85rem;cursor:pointer}
+.radio-row input[type=radio]{width:15px;height:15px;accent-color:#128c7e;cursor:pointer;flex-shrink:0}
+.time-inline{display:flex;align-items:center;gap:6px;margin-top:5px;margin-left:24px}
+.time-inline label{font-size:.75rem;color:#888}
+.time-inline input[type=time]{border:1px solid #ddd;border-radius:6px;padding:4px 7px;font-size:.82rem;width:90px;background:#fff}
+.panel-btns{display:flex;gap:8px}
+.btn-panel-save{background:#128c7e;color:#fff;flex:1}
+.btn-panel-cancel{background:#f0f2f5;color:#555;flex:1}
+
+/* TEMPLATE RANGES */
+.time-row{display:flex;align-items:center;gap:7px;margin-bottom:7px;flex-wrap:wrap}
+.time-row .day-name{font-size:.82rem;font-weight:700;color:#333;min-width:30px}
+.time-row label{font-size:.72rem;color:#999}
+.time-row input[type=time]{border:1px solid #ddd;border-radius:6px;padding:4px 7px;font-size:.82rem;width:88px;background:#fafafa}
+.btn-remove-day{background:#fef0f0;color:#c0392b;padding:4px 9px;font-size:.75rem;margin-left:auto}
+.btn-save{background:#128c7e;color:#fff;padding:9px 0;font-size:.85rem;width:100%;margin-top:8px;border-radius:10px}
+.empty-msg{font-size:.82rem;color:#bbb;text-align:center;padding:10px 0}
+
+/* SLOTS */
+.slot-date{font-size:.75rem;font-weight:700;color:#555;margin-top:8px;margin-bottom:3px;padding-bottom:3px;border-bottom:1px solid #f0f0f0}
+.slot-row{display:flex;align-items:center;justify-content:space-between;padding:4px 0;border-bottom:1px solid #f8f8f8}
+.slot-time{font-size:.88rem;color:#222}
+.btn-del-slot{background:#fef0f0;color:#c0392b;padding:3px 9px;font-size:.72rem;border-radius:6px}
+.slots-empty{font-size:.82rem;color:#bbb;text-align:center;padding:12px 0}
+
+/* HISTORIAL */
+.hist-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.hist-stat{background:#f8f8f8;border-radius:10px;padding:9px;text-align:center}
+.hist-stat .num{font-size:1.5rem;font-weight:700;color:#128c7e;line-height:1}
+.hist-stat .lbl{font-size:.62rem;color:#aaa;margin-top:2px}
+.hist-stat.done .num{color:#25d366}
+
+.hist-filters{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;align-items:center}
+.hist-filters select{border:1px solid #eee;border-radius:7px;padding:4px 8px;font-size:.78rem;background:#fafafa;color:#555;cursor:pointer}
+.hist-filters-right{margin-left:auto;display:flex;gap:6px}
+.btn-copy{background:#f0f2f5;color:#555;font-size:.75rem;padding:5px 10px}
+.btn-add-manual{background:#edfff4;color:#1a7a40;font-size:.75rem;padding:5px 10px}
+
+.add-manual-form{background:#f8fffe;border:1px solid #b2dfdb;border-radius:10px;padding:12px;margin-bottom:10px;display:flex;flex-direction:column;gap:8px}
+.add-manual-form .form-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.add-manual-form label{font-size:.75rem;color:#888;min-width:48px}
+.add-manual-form input,.add-manual-form select{border:1px solid #ddd;border-radius:6px;padding:5px 8px;font-size:.82rem;background:#fff;flex:1;min-width:80px}
+.add-manual-form .form-btns{display:flex;gap:8px}
+.btn-form-save{background:#128c7e;color:#fff;flex:1;font-size:.8rem}
+.btn-form-cancel{background:#f0f2f5;color:#555;flex:1;font-size:.8rem}
+
+.hist-month{font-size:.7rem;font-weight:700;color:#aaa;text-transform:uppercase;margin:10px 0 5px;padding-bottom:3px;border-bottom:1px solid #f0f0f0}
+.hist-row{display:flex;align-items:center;gap:9px;padding:6px 0;border-bottom:1px solid #f8f8f8}
+.hist-check{width:16px;height:16px;accent-color:#25d366;cursor:pointer;flex-shrink:0}
+.hist-info{flex:1;font-size:.85rem;color:#222}
+.hist-info .hist-service{font-weight:600}
+.hist-info .hist-date{font-size:.72rem;color:#999;margin-top:1px}
+.hist-del{background:none;border:none;color:#ddd;font-size:.95rem;cursor:pointer;padding:2px 5px}
+.hist-del:hover{color:#e74c3c}
+.hist-empty{font-size:.82rem;color:#bbb;text-align:center;padding:12px 0}
+.hist-scroll{max-height:240px;overflow-y:auto}
+
+/* SERVICIOS */
+.servicios-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:0;margin-bottom:12px}
+@media(max-width:700px){.servicios-grid{grid-template-columns:repeat(2,1fr)}}
+.serv-item{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #f5f5f5;cursor:pointer;font-size:.85rem}
+.serv-item input{width:15px;height:15px;accent-color:#25d366;cursor:pointer;flex-shrink:0}
+
+/* SETTINGS */
+.settings-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:500px){.settings-row{grid-template-columns:1fr}}
+.setting-label{font-size:.68rem;text-transform:uppercase;letter-spacing:.07em;color:#aaa;font-weight:700;margin-bottom:8px}
+.setting-inputs{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.setting-inputs input[type=number]{width:68px;border:1px solid #ddd;border-radius:8px;padding:6px 10px;font-size:.88rem;text-align:center}
+.setting-inputs span{font-size:.82rem;color:#888}
+.setting-hint{font-size:.7rem;color:#ccc;margin-top:5px}
+
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#222;color:#fff;padding:8px 20px;border-radius:20px;font-size:.82rem;opacity:0;transition:opacity .25s;pointer-events:none;white-space:nowrap}
+.toast.show{opacity:1}
+.hidden{display:none}
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Top bar -->
+  <div class="topbar">
+    <span class="status-label"><span class="dot" id="dot"></span><span id="statusTxt"></span></span>
+    <div class="topbar-right">
+      <div class="month-counter" id="monthCounter"><span id="monthCount">0</span>este mes</div>
+      <button id="btnAceptarHoy" title="Responder a peticiones con 'HOY' sin hora específica"></button>
+      <button id="toggleBtn"></button>
+    </div>
+  </div>
+
+  <!-- Banner inactivo -->
+  <div class="inactive-banner hidden" id="inactiveBanner">
+    ⚠️ <strong>Bot inactivo</strong> — no responde en CR Wellness. Activalo cuando estés listo.
+    <button class="btn-on" id="bannerActivar" style="padding:5px 12px;font-size:.78rem">Activar</button>
+  </div>
+
+  <!-- Main 2 columnas -->
+  <div class="main-grid">
+
+    <!-- IZQUIERDA: Calendario -->
+    <div class="card">
+      <div class="card-title">Disponibilidad</div>
+      <div class="legend">
+        <div class="legend-item"><div class="legend-dot template"></div>Template</div>
+        <div class="legend-item"><div class="legend-dot custom"></div>Personalizado</div>
+        <div class="legend-item"><div class="legend-dot blocked"></div>Bloqueado</div>
+        <div class="legend-item"><div class="legend-dot inactive"></div>Inactivo</div>
+        <div class="legend-item"><div class="legend-dot nodisp"></div>No disponible</div>
+      </div>
+      <div class="cal-nav">
+        <button id="prevMonth">&#8592;</button>
+        <span id="monthLabel"></span>
+        <button id="nextMonth">&#8594;</button>
+      </div>
+      <div class="cal-grid" id="calGrid"></div>
+
+      <div class="day-panel hidden" id="dayPanel">
+        <div class="day-panel-title" id="panelTitle"></div>
+        <div class="radio-group">
+          <label class="radio-row"><input type="radio" name="dayMode" value="inactivo"><span>Inactivo</span></label>
+          <label class="radio-row"><input type="radio" name="dayMode" value="template"><span id="optTemplateLabel">Usar horario semanal</span></label>
+          <label class="radio-row"><input type="radio" name="dayMode" value="custom"><span>Horario especifico</span></label>
+          <div class="time-inline" id="customTimeRow">
+            <label>desde</label><input type="time" id="panelDesde">
+            <label>hasta</label><input type="time" id="panelHasta">
+          </div>
+          <label class="radio-row"><input type="radio" name="dayMode" value="bloqueado"><span>Bloqueado (no respondo)</span></label>
+        </div>
+        <div class="panel-btns">
+          <button class="btn-panel-save" id="panelSave">Guardar</button>
+          <button class="btn-panel-cancel" id="panelCancel">Cancelar</button>
+        </div>
+      </div>
+
+      <div class="card-title" style="margin-top:14px">Horarios del template semanal</div>
+      <div id="timeRanges"></div>
+      <button class="btn-save" id="btnSave">Guardar template</button>
+    </div>
+
+    <!-- DERECHA -->
+    <div class="col-right">
+
+      <!-- Historial -->
+      <div class="card">
+        <div class="card-title">Historial de masajes</div>
+        <div class="hist-stats" id="historySummary"></div>
+
+        <div class="hist-filters">
+          <select id="filterMes"><option value="">Todos los meses</option></select>
+          <select id="filterServicio"><option value="">Todos los servicios</option></select>
+          <div class="hist-filters-right">
+            <button class="btn-copy" id="btnCopyResumen">Copiar mes</button>
+            <button class="btn-add-manual" id="btnAddManual">+ Manual</button>
+          </div>
+        </div>
+
+        <div class="add-manual-form hidden" id="addManualForm">
+          <div class="form-row">
+            <label>Fecha</label>
+            <input type="date" id="manualFecha">
+          </div>
+          <div class="form-row">
+            <label>Hora</label>
+            <input type="time" id="manualHora">
+          </div>
+          <div class="form-row">
+            <label>Servicio</label>
+            <select id="manualServicio"></select>
+          </div>
+          <div class="form-btns">
+            <button class="btn-form-save" id="btnManualSave">Guardar</button>
+            <button class="btn-form-cancel" id="btnManualCancel">Cancelar</button>
+          </div>
+        </div>
+
+        <div class="hist-scroll"><div id="historyList"></div></div>
+      </div>
+
+      <!-- Turnos aceptados -->
+      <div class="card" id="slotsCard">
+        <div class="card-title">Turnos aceptados</div>
+        <div id="slotsList"></div>
+        <button class="btn-save" id="btnClearSlots" style="margin-top:8px;background:#fef0f0;color:#c0392b">Limpiar todos</button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Servicios + Settings -->
+  <div class="card">
+    <div class="card-title">Servicios y configuracion</div>
+    <div id="serviciosList" class="servicios-grid"></div>
+    <div class="settings-row" style="margin-top:14px;padding-top:12px;border-top:1px solid #f0f0f0">
+      <div>
+        <div class="setting-label">Gap minimo entre turnos</div>
+        <div class="setting-inputs">
+          <input type="number" id="minGapInput" min="30" max="240" step="15">
+          <span>minutos</span>
+        </div>
+        <p class="setting-hint">Ej: gap 90min → turno a las 10:00 bloquea 8:30–11:30</p>
+      </div>
+      <div>
+        <div class="setting-label">Delay de respuesta</div>
+        <div class="setting-inputs">
+          <span>entre</span>
+          <input type="number" id="delayMinInput" min="0" max="60" step="1">
+          <span>y</span>
+          <input type="number" id="delayMaxInput" min="0" max="60" step="1">
+          <span>seg</span>
+        </div>
+        <p class="setting-hint">El bot espera antes de responder "Puedo"</p>
+      </div>
+    </div>
+    <button class="btn-save" id="btnSaveServicios" style="margin-top:12px">Guardar servicios y configuracion</button>
+  </div>
+
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+var DIAS_SHORT = ['Dom','Lun','Mar','Mie','Jue','Vie','Sab'];
+var DIAS_FULL  = ['Domingo','Lunes','Martes','Miercoles','Jueves','Viernes','Sabado'];
+var MESES      = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+var TODOS_SERVICIOS = ['Holistic','Deep Tissue','Aromatherapy','Facial','Body Bliss','Reiki','Californian','Thai','Craniosacral','Reflexology','Shamanic','Shoulders','Sound Healing','Ayurvedic'];
+
+var cfg = {};
+var slotsData = {};
+var historyData = [];
+var today = new Date(); today.setHours(0,0,0,0);
+var viewYear  = today.getFullYear();
+var viewMonth = today.getMonth();
+var selectedCell = null;
+
+// ── Carga ─────────────────────────────────────────────────────
+function load() {
+  fetch('/api/config')
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      if (!data.overrides) data.overrides = {};
+      cfg = data;
+      renderAll();
+    }).catch(function(e){ alert('Error: ' + e.message); });
+}
+
+function renderAll() {
+  renderStatus();
+  renderCalendar();
+  renderTimeRanges();
+  renderServicios();
+}
+
+// ── Estado ────────────────────────────────────────────────────
+function renderStatus() {
+  var on = cfg.botActivo;
+  document.getElementById('dot').className = 'dot ' + (on ? 'on' : 'off');
+  document.getElementById('statusTxt').textContent = on ? 'Activo' : 'Inactivo';
+  var tb = document.getElementById('toggleBtn');
+  tb.textContent = on ? 'Apagar' : 'Encender';
+  tb.className   = on ? 'btn-off' : 'btn-on';
+  var banner = document.getElementById('inactiveBanner');
+  if (on) banner.classList.add('hidden'); else banner.classList.remove('hidden');
+  var hoy = cfg.aceptarHoy;
+  var bh = document.getElementById('btnAceptarHoy');
+  bh.textContent = hoy ? 'HOY activo' : 'Activar HOY';
+  bh.className   = hoy ? 'btn-hoy-on' : 'btn-hoy-off';
+}
+
+// ── Calendario ────────────────────────────────────────────────
+function getState(dow, key) {
+  if (dow === 0 || dow === 1) return 'nodisp';
+  var ov = (cfg.overrides || {})[key];
+  if (ov) {
+    if (ov.bloqueado) return 'blocked';
+    if (ov.inactivo)  return 'inactive';
+    if (ov.desde)     return 'custom';
+  }
+  return cfg.disponible[String(dow)] ? 'template' : 'inactive';
+}
+
+function getSlotCount(dd, mm, yyyy) {
+  var key = dd + '/' + mm + '/' + yyyy;
+  return (slotsData[key] || []).length;
+}
+
+function renderCalendar() {
+  document.getElementById('monthLabel').textContent = MESES[viewMonth] + ' ' + viewYear;
+  var firstDow    = new Date(viewYear, viewMonth, 1).getDay();
+  var daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+  var offset      = (firstDow + 6) % 7;
+  var grid        = document.getElementById('calGrid');
+  grid.innerHTML  = '';
+
+  ['Lun','Mar','Mie','Jue','Vie','Sab','Dom'].forEach(function(h) {
+    var d = document.createElement('div'); d.className = 'cal-hdr'; d.textContent = h; grid.appendChild(d);
+  });
+
+  for (var i = 0; i < offset; i++) {
+    var e = document.createElement('div'); e.className = 'cal-cell empty'; grid.appendChild(e);
+  }
+
+  for (var day = 1; day <= daysInMonth; day++) {
+    var date   = new Date(viewYear, viewMonth, day);
+    var dow    = date.getDay();
+    var dd     = String(day).padStart(2,'0');
+    var mm     = String(viewMonth+1).padStart(2,'0');
+    var key    = dd+'/'+mm;
+    var isPast = date < today;
+    var isToday= date.getTime() === today.getTime();
+    var state  = getState(dow, key);
+    var slots  = getSlotCount(dd, mm, String(viewYear));
+
+    var cell = document.createElement('div');
+    cell.className = 'cal-cell ' + state;
+    cell.dataset.key = key; cell.dataset.dow = String(dow); cell.dataset.day = String(day);
+
+    var numEl = document.createElement('span'); numEl.textContent = day; cell.appendChild(numEl);
+    if (slots > 0) {
+      var badge = document.createElement('span'); badge.className = 'slot-badge';
+      badge.textContent = slots + (slots === 1 ? ' turno' : ' turnos'); cell.appendChild(badge);
+    }
+
+    if (isToday) cell.classList.add('today');
+    if (isPast)  cell.classList.add('past');
+    else cell.addEventListener('click', onCellClick);
+
+    if (selectedCell && selectedCell.dataset.key === key) {
+      cell.classList.add('selected'); selectedCell = cell;
+    }
+    grid.appendChild(cell);
+  }
+}
+
+function onCellClick() {
+  if (selectedCell) selectedCell.classList.remove('selected');
+  selectedCell = this; this.classList.add('selected');
+  openPanel(this.dataset.key, this.dataset.dow);
+}
+
+// ── Panel edicion ─────────────────────────────────────────────
+function openPanel(key, dow) {
+  var panel = document.getElementById('dayPanel');
+  var ov    = (cfg.overrides || {})[key];
+  var tmpl  = cfg.disponible[String(dow)];
+  var parts = key.split('/');
+  document.getElementById('panelTitle').textContent = DIAS_FULL[parseInt(dow)] + ' ' + parts[0] + '/' + parts[1];
+
+  var tmplLabel = document.getElementById('optTemplateLabel');
+  if (tmpl) {
+    tmplLabel.textContent = 'Template (' + tmpl.desde + ' \u2013 ' + tmpl.hasta + ')';
+    tmplLabel.parentElement.style.display = 'flex';
+  } else {
+    tmplLabel.parentElement.style.display = 'none';
+  }
+
+  var mode = 'inactivo';
+  if (ov) {
+    if (ov.bloqueado) mode = 'bloqueado';
+    else if (ov.inactivo) mode = 'inactivo';
+    else if (ov.desde) mode = 'custom';
+  } else if (tmpl) { mode = 'template'; }
+
+  var radios = document.getElementsByName('dayMode');
+  for (var i = 0; i < radios.length; i++) { if (radios[i].value === mode) radios[i].checked = true; }
+
+  document.getElementById('panelDesde').value = pad((ov && ov.desde) ? ov.desde : (tmpl ? tmpl.desde : '09:00'));
+  document.getElementById('panelHasta').value = pad((ov && ov.hasta) ? ov.hasta : (tmpl ? tmpl.hasta : '18:00'));
+  toggleCustomTime();
+  panel.dataset.key = key; panel.dataset.dow = dow;
+  panel.classList.remove('hidden');
+  panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function toggleCustomTime() {
+  document.getElementById('customTimeRow').style.display = (getSelectedMode() === 'custom') ? 'flex' : 'none';
+}
+function getSelectedMode() {
+  var radios = document.getElementsByName('dayMode');
+  for (var i = 0; i < radios.length; i++) { if (radios[i].checked) return radios[i].value; }
+  return 'inactivo';
+}
+function savePanel() {
+  var key  = document.getElementById('dayPanel').dataset.key;
+  var mode = getSelectedMode();
+  if (!cfg.overrides) cfg.overrides = {};
+  if (mode === 'template') { delete cfg.overrides[key]; }
+  else if (mode === 'inactivo') {
+    var dow = document.getElementById('dayPanel').dataset.dow;
+    if (cfg.disponible[String(dow)]) { cfg.overrides[key] = { inactivo: true }; }
+    else { delete cfg.overrides[key]; }
+  } else if (mode === 'custom') {
+    cfg.overrides[key] = { desde: document.getElementById('panelDesde').value, hasta: document.getElementById('panelHasta').value };
+  } else if (mode === 'bloqueado') {
+    cfg.overrides[key] = { bloqueado: true };
+  }
+  closePanel(); renderCalendar(); toast('Guardado: ' + key); guardar();
+}
+function closePanel() {
+  document.getElementById('dayPanel').classList.add('hidden');
+  if (selectedCell) { selectedCell.classList.remove('selected'); selectedCell = null; }
+}
+
+// ── Template ranges ───────────────────────────────────────────
+function renderTimeRanges() {
+  var ed = document.getElementById('timeRanges');
+  ed.innerHTML = '';
+  var keys = Object.keys(cfg.disponible).sort(function(a,b){ return +a-+b; });
+  if (keys.length === 0) {
+    var p = document.createElement('p'); p.className = 'empty-msg'; p.textContent = 'Ningun dia en el template.'; ed.appendChild(p); return;
+  }
+  keys.forEach(function(d) {
+    var h = cfg.disponible[d];
+    var row = document.createElement('div'); row.className = 'time-row';
+    var nm = document.createElement('span'); nm.className = 'day-name'; nm.textContent = DIAS_SHORT[parseInt(d)]; row.appendChild(nm);
+    row.appendChild(makeLabel('desde')); row.appendChild(makeTimeInput(h.desde, d, 'desde'));
+    row.appendChild(makeLabel('hasta')); row.appendChild(makeTimeInput(h.hasta, d, 'hasta'));
+    var rm = document.createElement('button'); rm.className = 'btn-remove-day'; rm.textContent = 'Quitar'; rm.dataset.dow = d;
+    rm.addEventListener('click', function() { delete cfg.disponible[this.dataset.dow]; renderCalendar(); renderTimeRanges(); toast('Dia quitado'); });
+    row.appendChild(rm); ed.appendChild(row);
+  });
+}
+function makeLabel(txt) { var l = document.createElement('label'); l.textContent = txt; return l; }
+function makeTimeInput(val, day, field) {
+  var inp = document.createElement('input'); inp.type = 'time'; inp.value = pad(val); inp.dataset.day = day; inp.dataset.field = field;
+  inp.addEventListener('change', function() { cfg.disponible[this.dataset.day][this.dataset.field] = this.value; });
+  return inp;
+}
+function pad(str) { if (!str) return '09:00'; var p = str.split(':'); return p[0].padStart(2,'0')+':'+(p[1]||'00').padStart(2,'0'); }
+
+// ── Servicios ─────────────────────────────────────────────────
+function renderServicios() {
+  document.getElementById('minGapInput').value   = cfg.minGapMins || 90;
+  document.getElementById('delayMinInput').value = cfg.delayMin   ?? 2;
+  document.getElementById('delayMaxInput').value = cfg.delayMax   ?? 6;
+  var container = document.getElementById('serviciosList'); container.innerHTML = '';
+  var permitidos = cfg.serviciosPermitidos || [];
+  TODOS_SERVICIOS.forEach(function(s) {
+    var row = document.createElement('label'); row.className = 'serv-item';
+    var cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = permitidos.indexOf(s) >= 0; cb.dataset.servicio = s;
+    cb.addEventListener('change', function() {
+      var p = cfg.serviciosPermitidos || [];
+      if (this.checked) { if (p.indexOf(this.dataset.servicio) < 0) p.push(this.dataset.servicio); }
+      else { p = p.filter(function(x){ return x !== this.dataset.servicio; }.bind(this)); }
+      cfg.serviciosPermitidos = p;
+    });
+    row.appendChild(cb); row.appendChild(document.createTextNode(s)); container.appendChild(row);
+  });
+}
+
+// ── Guardar ───────────────────────────────────────────────────
+function guardar() {
+  fetch('/api/config', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(cfg) })
+    .then(function(){ toast('Guardado'); });
+}
+function toggleBot() {
+  cfg.botActivo = !cfg.botActivo;
+  fetch('/api/config', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(cfg) })
+    .then(function(){ renderStatus(); toast(cfg.botActivo ? 'Bot activado' : 'Bot desactivado'); });
+}
+function toast(msg) {
+  var t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show');
+  setTimeout(function(){ t.classList.remove('show'); }, 2000);
+}
+
+// ── Eventos ───────────────────────────────────────────────────
+document.getElementById('toggleBtn').addEventListener('click', toggleBot);
+document.getElementById('bannerActivar').addEventListener('click', toggleBot);
+document.getElementById('btnAceptarHoy').addEventListener('click', function() {
+  cfg.aceptarHoy = !cfg.aceptarHoy;
+  fetch('/api/config', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(cfg) })
+    .then(function(){ renderStatus(); toast(cfg.aceptarHoy ? 'Aceptar HOY activado' : 'Aceptar HOY desactivado'); });
+});
+document.getElementById('btnSave').addEventListener('click', guardar);
+document.getElementById('btnSaveServicios').addEventListener('click', function() {
+  cfg.minGapMins = parseInt(document.getElementById('minGapInput').value) || 90;
+  var dMin = parseInt(document.getElementById('delayMinInput').value) || 0;
+  var dMax = parseInt(document.getElementById('delayMaxInput').value) || 2;
+  cfg.delayMin = Math.min(dMin, dMax); cfg.delayMax = Math.max(dMin, dMax);
+  guardar();
+});
+document.getElementById('panelSave').addEventListener('click', savePanel);
+document.getElementById('panelCancel').addEventListener('click', closePanel);
+document.getElementById('prevMonth').addEventListener('click', function() {
+  viewMonth--; if (viewMonth < 0) { viewMonth = 11; viewYear--; } renderCalendar();
+});
+document.getElementById('nextMonth').addEventListener('click', function() {
+  viewMonth++; if (viewMonth > 11) { viewMonth = 0; viewYear++; } renderCalendar();
+});
+document.querySelectorAll('input[name=dayMode]').forEach(function(r){ r.addEventListener('change', toggleCustomTime); });
+
+// ── Slots ─────────────────────────────────────────────────────
+function loadSlots() {
+  fetch('/api/slots').then(function(r){ return r.json(); }).then(function(data){ slotsData = data; renderSlots(data); renderCalendar(); }).catch(function(){});
+}
+function renderSlots(slots) {
+  var container = document.getElementById('slotsList'); container.innerHTML = '';
+  var keys = Object.keys(slots).sort();
+  if (keys.length === 0) { var p = document.createElement('p'); p.className = 'slots-empty'; p.textContent = 'Ningún turno aceptado aún.'; container.appendChild(p); return; }
+  keys.forEach(function(dateKey) {
+    var hdr = document.createElement('div'); hdr.className = 'slot-date'; hdr.textContent = dateKey; container.appendChild(hdr);
+    slots[dateKey].forEach(function(mins) {
+      var row = document.createElement('div'); row.className = 'slot-row';
+      var span = document.createElement('span'); span.className = 'slot-time';
+      span.textContent = mins === -1 ? 'Flexible' : String(Math.floor(mins/60)).padStart(2,'0')+':'+String(mins%60).padStart(2,'0');
+      var btn = document.createElement('button'); btn.className = 'btn-del-slot'; btn.textContent = 'Quitar'; btn.dataset.key = dateKey; btn.dataset.mins = String(mins);
+      btn.addEventListener('click', function() {
+        fetch('/api/slots/'+encodeURIComponent(this.dataset.key)+'?mins='+this.dataset.mins, { method:'DELETE' })
+          .then(function(){ loadSlots(); toast('Turno eliminado'); });
+      });
+      row.appendChild(span); row.appendChild(btn); container.appendChild(row);
+    });
+  });
+}
+document.getElementById('btnClearSlots').addEventListener('click', function() {
+  if (!confirm('Borrar todos los turnos?')) return;
+  fetch('/api/slots', { method:'DELETE' }).then(function(){ loadSlots(); toast('Turnos borrados'); });
+});
+
+// ── Historial ─────────────────────────────────────────────────
+function loadHistory() {
+  fetch('/api/history').then(function(r){ return r.json(); }).then(function(data){ historyData = data; renderHistory(); }).catch(function(){});
+}
+
+function renderHistory() {
+  var filterMes  = document.getElementById('filterMes').value;
+  var filterServ = document.getElementById('filterServicio').value;
+  var entries    = historyData;
+
+  // Actualizar contadores globales (sin filtro)
+  var total      = historyData.length;
+  var realizados = historyData.filter(function(e){ return e.realizado; }).length;
+  var summary = document.getElementById('historySummary'); summary.innerHTML = '';
+  summary.appendChild(makeStat(total,             'Puedo',      false));
+  summary.appendChild(makeStat(realizados,         'Realizados', true));
+  summary.appendChild(makeStat(total-realizados,   'Pendientes', false));
+
+  // Contador mes actual en topbar
+  var now = new Date();
+  var mmNow = String(now.getMonth()+1).padStart(2,'0');
+  var yyNow = String(now.getFullYear());
+  var thisMon = historyData.filter(function(e){
+    var p = e.fecha.split('/'); return p[1] === mmNow && p[2] === yyNow;
+  }).length;
+  document.getElementById('monthCount').textContent = thisMon + ' ';
+
+  // Poblar filtros
+  var meses = {}; var servs = {};
+  historyData.forEach(function(e) {
+    var p = e.fecha.split('/'); var mk = p[1]+'/'+p[2];
+    meses[mk] = true; servs[e.servicio] = true;
+  });
+  var selMes = document.getElementById('filterMes');
+  var prevMes = selMes.value;
+  selMes.innerHTML = '<option value="">Todos los meses</option>';
+  Object.keys(meses).sort().reverse().forEach(function(mk) {
+    var p = mk.split('/'); var opt = document.createElement('option'); opt.value = mk;
+    opt.textContent = MESES[parseInt(p[0])-1] + ' ' + p[1]; selMes.appendChild(opt);
+  });
+  selMes.value = prevMes;
+
+  var selServ = document.getElementById('filterServicio');
+  var prevServ = selServ.value;
+  selServ.innerHTML = '<option value="">Todos los servicios</option>';
+  Object.keys(servs).sort().forEach(function(s) {
+    var opt = document.createElement('option'); opt.value = s; opt.textContent = s; selServ.appendChild(opt);
+  });
+  selServ.value = prevServ;
+
+  // Aplicar filtros
+  if (filterMes) {
+    entries = entries.filter(function(e) {
+      var p = e.fecha.split('/'); return (p[1]+'/'+p[2]) === filterMes;
+    });
+  }
+  if (filterServ) { entries = entries.filter(function(e){ return e.servicio === filterServ; }); }
+
+  // Render lista
+  var list = document.getElementById('historyList'); list.innerHTML = '';
+  if (entries.length === 0) {
+    var p = document.createElement('p'); p.className = 'hist-empty'; p.textContent = 'Sin resultados.'; list.appendChild(p); return;
+  }
+
+  var byMonth = {};
+  entries.slice().reverse().forEach(function(e) {
+    var parts = e.fecha.split('/'); var mk = parts[1]+'/'+parts[2];
+    if (!byMonth[mk]) byMonth[mk] = []; byMonth[mk].push(e);
+  });
+
+  Object.keys(byMonth).forEach(function(mk) {
+    var parts = mk.split('/');
+    var hdr = document.createElement('div'); hdr.className = 'hist-month';
+    hdr.textContent = MESES[parseInt(parts[0])-1] + ' ' + parts[1]; list.appendChild(hdr);
+    byMonth[mk].forEach(function(e) {
+      var row = document.createElement('div'); row.className = 'hist-row';
+      var cb = document.createElement('input'); cb.type = 'checkbox'; cb.className = 'hist-check'; cb.checked = e.realizado; cb.dataset.id = e.id;
+      cb.addEventListener('change', function() {
+        var checked = this.checked;
+        fetch('/api/history/'+this.dataset.id, { method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({realizado:checked}) })
+          .then(function(){ loadHistory(); toast(checked ? 'Realizado' : 'Desmarcado'); });
+      });
+      var info = document.createElement('div'); info.className = 'hist-info';
+      var timeStr = e.mins !== null ? String(Math.floor(e.mins/60)).padStart(2,'0')+':'+String(e.mins%60).padStart(2,'0') : 'Flexible';
+      info.innerHTML = '<span class="hist-service">'+e.servicio+'</span><div class="hist-date">'+e.fecha+' · '+timeStr+'</div>';
+      var del = document.createElement('button'); del.className = 'hist-del'; del.textContent = '✕'; del.dataset.id = e.id;
+      del.addEventListener('click', function() {
+        fetch('/api/history/'+this.dataset.id, {method:'DELETE'}).then(function(){ loadHistory(); toast('Eliminado'); });
+      });
+      row.appendChild(cb); row.appendChild(info); row.appendChild(del); list.appendChild(row);
+    });
+  });
+}
+
+function makeStat(num, label, done) {
+  var d = document.createElement('div'); d.className = 'hist-stat'+(done?' done':'');
+  d.innerHTML = '<div class="num">'+num+'</div><div class="lbl">'+label+'</div>'; return d;
+}
+
+// Filtros
+document.getElementById('filterMes').addEventListener('change', renderHistory);
+document.getElementById('filterServicio').addEventListener('change', renderHistory);
+
+// Copiar resumen del mes
+document.getElementById('btnCopyResumen').addEventListener('click', function() {
+  var filterMes = document.getElementById('filterMes').value;
+  var entries = filterMes
+    ? historyData.filter(function(e){ var p=e.fecha.split('/'); return (p[1]+'/'+p[2])===filterMes; })
+    : historyData.filter(function(e){ var p=e.fecha.split('/'); var now=new Date(); return p[1]===String(now.getMonth()+1).padStart(2,'0') && p[2]===String(now.getFullYear()); });
+
+  if (entries.length === 0) { toast('Sin datos para copiar'); return; }
+  var p0 = entries[0].fecha.split('/');
+  var titulo = MESES[parseInt(p0[1])-1] + ' ' + p0[2] + ': ' + entries.length + ' masajes';
+  var lineas = entries.map(function(e) {
+    var t = e.mins !== null ? String(Math.floor(e.mins/60)).padStart(2,'0')+':'+String(e.mins%60).padStart(2,'0') : 'flex';
+    return '- ' + e.fecha + ' ' + t + ' ' + e.servicio + (e.realizado ? ' ✓' : '');
+  });
+  navigator.clipboard.writeText(titulo + '\n' + lineas.join('\n'))
+    .then(function(){ toast('Copiado al portapapeles'); });
+});
+
+// Agregar manual
+var manualVisible = false;
+document.getElementById('btnAddManual').addEventListener('click', function() {
+  manualVisible = !manualVisible;
+  document.getElementById('addManualForm').classList.toggle('hidden', !manualVisible);
+  if (manualVisible) {
+    var sel = document.getElementById('manualServicio'); sel.innerHTML = '';
+    TODOS_SERVICIOS.forEach(function(s){ var o=document.createElement('option'); o.value=s; o.textContent=s; sel.appendChild(o); });
+    var now = new Date(); document.getElementById('manualFecha').value = now.toISOString().split('T')[0];
+  }
+});
+document.getElementById('btnManualCancel').addEventListener('click', function() {
+  manualVisible = false; document.getElementById('addManualForm').classList.add('hidden');
+});
+document.getElementById('btnManualSave').addEventListener('click', function() {
+  var fechaRaw = document.getElementById('manualFecha').value;
+  if (!fechaRaw) { toast('Falta la fecha'); return; }
+  var parts = fechaRaw.split('-');
+  var fecha = parts[2]+'/'+parts[1]+'/'+parts[0];
+  var horaRaw = document.getElementById('manualHora').value;
+  var mins = horaRaw ? (parseInt(horaRaw.split(':')[0])*60 + parseInt(horaRaw.split(':')[1])) : null;
+  var servicio = document.getElementById('manualServicio').value;
+  fetch('/api/history', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({fecha:fecha, mins:mins, servicio:servicio}) })
+    .then(function(){ manualVisible=false; document.getElementById('addManualForm').classList.add('hidden'); loadHistory(); toast('Turno agregado'); });
+});
+
+load();
+loadSlots();
+loadHistory();
+</script>
+</body>
+</html>
