@@ -1,7 +1,7 @@
 {
   "name": "whatsapp-cal-bot",
   "version": "1.0.0",
-  "description": "Bot WhatsApp para responder peticiones automáticamente",
+  "description": "WhatsApp bot that auto-replies to group scheduling requests based on availability",
   "main": "bot.js",
   "scripts": {
     "start": "node bot.js"

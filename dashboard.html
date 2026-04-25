@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Bot Dashboard</title>
+<title>WhatsApp Availability Bot — Dashboard</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f0f2f5;color:#111;padding-bottom:40px}
@@ -99,7 +99,7 @@ button:hover{opacity:.82}
 .btn-del-slot{background:#fef0f0;color:#c0392b;padding:3px 9px;font-size:.72rem;border-radius:6px}
 .slots-empty{font-size:.82rem;color:#bbb;text-align:center;padding:12px 0}
 
-/* HISTORIAL */
+/* HISTORY */
 .hist-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
 .hist-stat{background:#f8f8f8;border-radius:10px;padding:9px;text-align:center}
 .hist-stat .num{font-size:1.5rem;font-weight:700;color:#128c7e;line-height:1}
@@ -131,7 +131,7 @@ button:hover{opacity:.82}
 .hist-empty{font-size:.82rem;color:#bbb;text-align:center;padding:12px 0}
 .hist-scroll{max-height:240px;overflow-y:auto}
 
-/* SERVICIOS */
+/* SERVICES */
 .servicios-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:0;margin-bottom:12px}
 @media(max-width:700px){.servicios-grid{grid-template-columns:repeat(2,1fr)}}
 .serv-item{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #f5f5f5;cursor:pointer;font-size:.85rem}
@@ -158,30 +158,30 @@ button:hover{opacity:.82}
   <div class="topbar">
     <span class="status-label"><span class="dot" id="dot"></span><span id="statusTxt"></span></span>
     <div class="topbar-right">
-      <div class="month-counter" id="monthCounter"><span id="monthCount">0</span>este mes</div>
-      <button id="btnAceptarHoy" title="Responder a peticiones con 'HOY' sin hora específica"></button>
+      <div class="month-counter" id="monthCounter"><span id="monthCount">0</span> this month</div>
+      <button id="btnAceptarHoy" title="Reply to requests with 'TODAY' without a specific time"></button>
       <button id="toggleBtn"></button>
     </div>
   </div>
 
-  <!-- Banner inactivo -->
+  <!-- Inactive banner -->
   <div class="inactive-banner hidden" id="inactiveBanner">
-    ⚠️ <strong>Bot inactivo</strong> — no responde en CR Wellness. Activalo cuando estés listo.
-    <button class="btn-on" id="bannerActivar" style="padding:5px 12px;font-size:.78rem">Activar</button>
+    ⚠️ <strong>Bot inactive</strong> — not responding in Scheduling Group. Enable when ready.
+    <button class="btn-on" id="bannerActivar" style="padding:5px 12px;font-size:.78rem">Enable</button>
   </div>
 
-  <!-- Main 2 columnas -->
+  <!-- Main 2-column layout -->
   <div class="main-grid">
 
-    <!-- IZQUIERDA: Calendario -->
+    <!-- LEFT: Calendar -->
     <div class="card">
-      <div class="card-title">Disponibilidad</div>
+      <div class="card-title">Availability</div>
       <div class="legend">
         <div class="legend-item"><div class="legend-dot template"></div>Template</div>
-        <div class="legend-item"><div class="legend-dot custom"></div>Personalizado</div>
-        <div class="legend-item"><div class="legend-dot blocked"></div>Bloqueado</div>
-        <div class="legend-item"><div class="legend-dot inactive"></div>Inactivo</div>
-        <div class="legend-item"><div class="legend-dot nodisp"></div>No disponible</div>
+        <div class="legend-item"><div class="legend-dot custom"></div>Custom</div>
+        <div class="legend-item"><div class="legend-dot blocked"></div>Blocked</div>
+        <div class="legend-item"><div class="legend-dot inactive"></div>Inactive</div>
+        <div class="legend-item"><div class="legend-dot nodisp"></div>Not available</div>
       </div>
       <div class="cal-nav">
         <button id="prevMonth">&#8592;</button>
@@ -193,111 +193,111 @@ button:hover{opacity:.82}
       <div class="day-panel hidden" id="dayPanel">
         <div class="day-panel-title" id="panelTitle"></div>
         <div class="radio-group">
-          <label class="radio-row"><input type="radio" name="dayMode" value="inactivo"><span>Inactivo</span></label>
-          <label class="radio-row"><input type="radio" name="dayMode" value="template"><span id="optTemplateLabel">Usar horario semanal</span></label>
-          <label class="radio-row"><input type="radio" name="dayMode" value="custom"><span>Horario especifico</span></label>
+          <label class="radio-row"><input type="radio" name="dayMode" value="inactivo"><span>Inactive</span></label>
+          <label class="radio-row"><input type="radio" name="dayMode" value="template"><span id="optTemplateLabel">Use weekly template</span></label>
+          <label class="radio-row"><input type="radio" name="dayMode" value="custom"><span>Custom schedule</span></label>
           <div class="time-inline" id="customTimeRow">
-            <label>desde</label><input type="time" id="panelDesde">
-            <label>hasta</label><input type="time" id="panelHasta">
+            <label>from</label><input type="time" id="panelDesde">
+            <label>to</label><input type="time" id="panelHasta">
           </div>
-          <label class="radio-row"><input type="radio" name="dayMode" value="bloqueado"><span>Bloqueado (no respondo)</span></label>
+          <label class="radio-row"><input type="radio" name="dayMode" value="bloqueado"><span>Blocked (no reply)</span></label>
         </div>
         <div class="panel-btns">
-          <button class="btn-panel-save" id="panelSave">Guardar</button>
-          <button class="btn-panel-cancel" id="panelCancel">Cancelar</button>
+          <button class="btn-panel-save" id="panelSave">Save</button>
+          <button class="btn-panel-cancel" id="panelCancel">Cancel</button>
         </div>
       </div>
 
-      <div class="card-title" style="margin-top:14px">Horarios del template semanal</div>
+      <div class="card-title" style="margin-top:14px">Weekly template hours</div>
       <div id="timeRanges"></div>
-      <button class="btn-save" id="btnSave">Guardar template</button>
+      <button class="btn-save" id="btnSave">Save template</button>
     </div>
 
-    <!-- DERECHA -->
+    <!-- RIGHT -->
     <div class="col-right">
 
-      <!-- Historial -->
+      <!-- History -->
       <div class="card">
-        <div class="card-title">Historial de masajes</div>
+        <div class="card-title">Appointment history</div>
         <div class="hist-stats" id="historySummary"></div>
 
         <div class="hist-filters">
-          <select id="filterMes"><option value="">Todos los meses</option></select>
-          <select id="filterServicio"><option value="">Todos los servicios</option></select>
+          <select id="filterMes"><option value="">All months</option></select>
+          <select id="filterServicio"><option value="">All services</option></select>
           <div class="hist-filters-right">
-            <button class="btn-copy" id="btnCopyResumen">Copiar mes</button>
+            <button class="btn-copy" id="btnCopyResumen">Copy month</button>
             <button class="btn-add-manual" id="btnAddManual">+ Manual</button>
           </div>
         </div>
 
         <div class="add-manual-form hidden" id="addManualForm">
           <div class="form-row">
-            <label>Fecha</label>
+            <label>Date</label>
             <input type="date" id="manualFecha">
           </div>
           <div class="form-row">
-            <label>Hora</label>
+            <label>Time</label>
             <input type="time" id="manualHora">
           </div>
           <div class="form-row">
-            <label>Servicio</label>
+            <label>Service</label>
             <select id="manualServicio"></select>
           </div>
           <div class="form-btns">
-            <button class="btn-form-save" id="btnManualSave">Guardar</button>
-            <button class="btn-form-cancel" id="btnManualCancel">Cancelar</button>
+            <button class="btn-form-save" id="btnManualSave">Save</button>
+            <button class="btn-form-cancel" id="btnManualCancel">Cancel</button>
           </div>
         </div>
 
         <div class="hist-scroll"><div id="historyList"></div></div>
       </div>
 
-      <!-- Turnos aceptados -->
+      <!-- Accepted slots -->
       <div class="card" id="slotsCard">
-        <div class="card-title">Turnos aceptados</div>
+        <div class="card-title">Accepted slots</div>
         <div id="slotsList"></div>
-        <button class="btn-save" id="btnClearSlots" style="margin-top:8px;background:#fef0f0;color:#c0392b">Limpiar todos</button>
+        <button class="btn-save" id="btnClearSlots" style="margin-top:8px;background:#fef0f0;color:#c0392b">Clear all</button>
       </div>
 
     </div>
   </div>
 
-  <!-- Servicios + Settings -->
+  <!-- Services + Settings -->
   <div class="card">
-    <div class="card-title">Servicios y configuracion</div>
+    <div class="card-title">Services &amp; settings</div>
     <div id="serviciosList" class="servicios-grid"></div>
     <div class="settings-row" style="margin-top:14px;padding-top:12px;border-top:1px solid #f0f0f0">
       <div>
-        <div class="setting-label">Gap minimo entre turnos</div>
+        <div class="setting-label">Min gap between slots</div>
         <div class="setting-inputs">
           <input type="number" id="minGapInput" min="30" max="240" step="15">
-          <span>minutos</span>
+          <span>minutes</span>
         </div>
-        <p class="setting-hint">Ej: gap 90min → turno a las 10:00 bloquea 8:30–11:30</p>
+        <p class="setting-hint">E.g.: 90min gap → slot at 10:00 blocks 8:30–11:30</p>
       </div>
       <div>
-        <div class="setting-label">Delay de respuesta</div>
+        <div class="setting-label">Reply delay</div>
         <div class="setting-inputs">
-          <span>entre</span>
+          <span>between</span>
           <input type="number" id="delayMinInput" min="0" max="60" step="1">
-          <span>y</span>
+          <span>and</span>
           <input type="number" id="delayMaxInput" min="0" max="60" step="1">
-          <span>seg</span>
+          <span>sec</span>
         </div>
-        <p class="setting-hint">El bot espera antes de responder "Puedo"</p>
+        <p class="setting-hint">Bot waits before replying "Available"</p>
       </div>
     </div>
-    <button class="btn-save" id="btnSaveServicios" style="margin-top:12px">Guardar servicios y configuracion</button>
+    <button class="btn-save" id="btnSaveServicios" style="margin-top:12px">Save services &amp; settings</button>
   </div>
 
 </div>
 <div class="toast" id="toast"></div>
 
 <script>
-var DIAS_SHORT = ['Dom','Lun','Mar','Mie','Jue','Vie','Sab'];
-var DIAS_FULL  = ['Domingo','Lunes','Martes','Miercoles','Jueves','Viernes','Sabado'];
-var MESES      = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-var TODOS_SERVICIOS = ['Holistic','Deep Tissue','Aromatherapy','Facial','Body Bliss','Reiki','Californian','Thai','Craniosacral','Reflexology','Shamanic','Shoulders','Sound Healing','Ayurvedic'];
+var DAYS_SHORT = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+var DAYS_FULL  = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+var MONTHS     = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+var ALL_SERVICES = ['Holistic','Deep Tissue','Aromatherapy','Facial','Body Bliss','Reiki','Californian','Thai','Craniosacral','Reflexology','Shamanic','Shoulders','Sound Healing','Ayurvedic'];
 
 var cfg = {};
 var slotsData = {};
@@ -307,7 +307,7 @@ var viewYear  = today.getFullYear();
 var viewMonth = today.getMonth();
 var selectedCell = null;
 
-// ── Carga ─────────────────────────────────────────────────────
+// ── Load ──────────────────────────────────────────────────────
 function load() {
   fetch('/api/config')
     .then(function(r){ return r.json(); })
@@ -325,23 +325,23 @@ function renderAll() {
   renderServicios();
 }
 
-// ── Estado ────────────────────────────────────────────────────
+// ── Status ────────────────────────────────────────────────────
 function renderStatus() {
   var on = cfg.botActivo;
   document.getElementById('dot').className = 'dot ' + (on ? 'on' : 'off');
-  document.getElementById('statusTxt').textContent = on ? 'Activo' : 'Inactivo';
+  document.getElementById('statusTxt').textContent = on ? 'Active' : 'Inactive';
   var tb = document.getElementById('toggleBtn');
-  tb.textContent = on ? 'Apagar' : 'Encender';
+  tb.textContent = on ? 'Disable' : 'Enable';
   tb.className   = on ? 'btn-off' : 'btn-on';
   var banner = document.getElementById('inactiveBanner');
   if (on) banner.classList.add('hidden'); else banner.classList.remove('hidden');
   var hoy = cfg.aceptarHoy;
   var bh = document.getElementById('btnAceptarHoy');
-  bh.textContent = hoy ? 'HOY activo' : 'Activar HOY';
+  bh.textContent = hoy ? 'TODAY active' : 'Enable TODAY';
   bh.className   = hoy ? 'btn-hoy-on' : 'btn-hoy-off';
 }
 
-// ── Calendario ────────────────────────────────────────────────
+// ── Calendar ──────────────────────────────────────────────────
 function getState(dow, key) {
   if (dow === 0 || dow === 1) return 'nodisp';
   var ov = (cfg.overrides || {})[key];
@@ -359,14 +359,14 @@ function getSlotCount(dd, mm, yyyy) {
 }
 
 function renderCalendar() {
-  document.getElementById('monthLabel').textContent = MESES[viewMonth] + ' ' + viewYear;
+  document.getElementById('monthLabel').textContent = MONTHS[viewMonth] + ' ' + viewYear;
   var firstDow    = new Date(viewYear, viewMonth, 1).getDay();
   var daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
   var offset      = (firstDow + 6) % 7;
   var grid        = document.getElementById('calGrid');
   grid.innerHTML  = '';
 
-  ['Lun','Mar','Mie','Jue','Vie','Sab','Dom'].forEach(function(h) {
+  ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].forEach(function(h) {
     var d = document.createElement('div'); d.className = 'cal-hdr'; d.textContent = h; grid.appendChild(d);
   });
 
@@ -392,7 +392,7 @@ function renderCalendar() {
     var numEl = document.createElement('span'); numEl.textContent = day; cell.appendChild(numEl);
     if (slots > 0) {
       var badge = document.createElement('span'); badge.className = 'slot-badge';
-      badge.textContent = slots + (slots === 1 ? ' turno' : ' turnos'); cell.appendChild(badge);
+      badge.textContent = slots + (slots === 1 ? ' slot' : ' slots'); cell.appendChild(badge);
     }
 
     if (isToday) cell.classList.add('today');
@@ -412,17 +412,17 @@ function onCellClick() {
   openPanel(this.dataset.key, this.dataset.dow);
 }
 
-// ── Panel edicion ─────────────────────────────────────────────
+// ── Day panel ─────────────────────────────────────────────────
 function openPanel(key, dow) {
   var panel = document.getElementById('dayPanel');
   var ov    = (cfg.overrides || {})[key];
   var tmpl  = cfg.disponible[String(dow)];
   var parts = key.split('/');
-  document.getElementById('panelTitle').textContent = DIAS_FULL[parseInt(dow)] + ' ' + parts[0] + '/' + parts[1];
+  document.getElementById('panelTitle').textContent = DAYS_FULL[parseInt(dow)] + ' ' + parts[0] + '/' + parts[1];
 
   var tmplLabel = document.getElementById('optTemplateLabel');
   if (tmpl) {
-    tmplLabel.textContent = 'Template (' + tmpl.desde + ' \u2013 ' + tmpl.hasta + ')';
+    tmplLabel.textContent = 'Template (' + tmpl.desde + ' – ' + tmpl.hasta + ')';
     tmplLabel.parentElement.style.display = 'flex';
   } else {
     tmplLabel.parentElement.style.display = 'none';
@@ -468,7 +468,7 @@ function savePanel() {
   } else if (mode === 'bloqueado') {
     cfg.overrides[key] = { bloqueado: true };
   }
-  closePanel(); renderCalendar(); toast('Guardado: ' + key); guardar();
+  closePanel(); renderCalendar(); toast('Saved: ' + key); save();
 }
 function closePanel() {
   document.getElementById('dayPanel').classList.add('hidden');
@@ -481,16 +481,16 @@ function renderTimeRanges() {
   ed.innerHTML = '';
   var keys = Object.keys(cfg.disponible).sort(function(a,b){ return +a-+b; });
   if (keys.length === 0) {
-    var p = document.createElement('p'); p.className = 'empty-msg'; p.textContent = 'Ningun dia en el template.'; ed.appendChild(p); return;
+    var p = document.createElement('p'); p.className = 'empty-msg'; p.textContent = 'No days in template.'; ed.appendChild(p); return;
   }
   keys.forEach(function(d) {
     var h = cfg.disponible[d];
     var row = document.createElement('div'); row.className = 'time-row';
-    var nm = document.createElement('span'); nm.className = 'day-name'; nm.textContent = DIAS_SHORT[parseInt(d)]; row.appendChild(nm);
-    row.appendChild(makeLabel('desde')); row.appendChild(makeTimeInput(h.desde, d, 'desde'));
-    row.appendChild(makeLabel('hasta')); row.appendChild(makeTimeInput(h.hasta, d, 'hasta'));
-    var rm = document.createElement('button'); rm.className = 'btn-remove-day'; rm.textContent = 'Quitar'; rm.dataset.dow = d;
-    rm.addEventListener('click', function() { delete cfg.disponible[this.dataset.dow]; renderCalendar(); renderTimeRanges(); toast('Dia quitado'); });
+    var nm = document.createElement('span'); nm.className = 'day-name'; nm.textContent = DAYS_SHORT[parseInt(d)]; row.appendChild(nm);
+    row.appendChild(makeLabel('from')); row.appendChild(makeTimeInput(h.desde, d, 'desde'));
+    row.appendChild(makeLabel('to')); row.appendChild(makeTimeInput(h.hasta, d, 'hasta'));
+    var rm = document.createElement('button'); rm.className = 'btn-remove-day'; rm.textContent = 'Remove'; rm.dataset.dow = d;
+    rm.addEventListener('click', function() { delete cfg.disponible[this.dataset.dow]; renderCalendar(); renderTimeRanges(); toast('Day removed'); });
     row.appendChild(rm); ed.appendChild(row);
   });
 }
@@ -502,14 +502,14 @@ function makeTimeInput(val, day, field) {
 }
 function pad(str) { if (!str) return '09:00'; var p = str.split(':'); return p[0].padStart(2,'0')+':'+(p[1]||'00').padStart(2,'0'); }
 
-// ── Servicios ─────────────────────────────────────────────────
+// ── Services ──────────────────────────────────────────────────
 function renderServicios() {
   document.getElementById('minGapInput').value   = cfg.minGapMins || 90;
   document.getElementById('delayMinInput').value = cfg.delayMin   ?? 2;
   document.getElementById('delayMaxInput').value = cfg.delayMax   ?? 6;
   var container = document.getElementById('serviciosList'); container.innerHTML = '';
   var permitidos = cfg.serviciosPermitidos || [];
-  TODOS_SERVICIOS.forEach(function(s) {
+  ALL_SERVICES.forEach(function(s) {
     var row = document.createElement('label'); row.className = 'serv-item';
     var cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = permitidos.indexOf(s) >= 0; cb.dataset.servicio = s;
     cb.addEventListener('change', function() {
@@ -522,36 +522,36 @@ function renderServicios() {
   });
 }
 
-// ── Guardar ───────────────────────────────────────────────────
-function guardar() {
+// ── Save ──────────────────────────────────────────────────────
+function save() {
   fetch('/api/config', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(cfg) })
-    .then(function(){ toast('Guardado'); });
+    .then(function(){ toast('Saved'); });
 }
 function toggleBot() {
   cfg.botActivo = !cfg.botActivo;
   fetch('/api/config', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(cfg) })
-    .then(function(){ renderStatus(); toast(cfg.botActivo ? 'Bot activado' : 'Bot desactivado'); });
+    .then(function(){ renderStatus(); toast(cfg.botActivo ? 'Bot enabled' : 'Bot disabled'); });
 }
 function toast(msg) {
   var t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show');
   setTimeout(function(){ t.classList.remove('show'); }, 2000);
 }
 
-// ── Eventos ───────────────────────────────────────────────────
+// ── Events ────────────────────────────────────────────────────
 document.getElementById('toggleBtn').addEventListener('click', toggleBot);
 document.getElementById('bannerActivar').addEventListener('click', toggleBot);
 document.getElementById('btnAceptarHoy').addEventListener('click', function() {
   cfg.aceptarHoy = !cfg.aceptarHoy;
   fetch('/api/config', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(cfg) })
-    .then(function(){ renderStatus(); toast(cfg.aceptarHoy ? 'Aceptar HOY activado' : 'Aceptar HOY desactivado'); });
+    .then(function(){ renderStatus(); toast(cfg.aceptarHoy ? 'TODAY enabled' : 'TODAY disabled'); });
 });
-document.getElementById('btnSave').addEventListener('click', guardar);
+document.getElementById('btnSave').addEventListener('click', save);
 document.getElementById('btnSaveServicios').addEventListener('click', function() {
   cfg.minGapMins = parseInt(document.getElementById('minGapInput').value) || 90;
   var dMin = parseInt(document.getElementById('delayMinInput').value) || 0;
   var dMax = parseInt(document.getElementById('delayMaxInput').value) || 2;
   cfg.delayMin = Math.min(dMin, dMax); cfg.delayMax = Math.max(dMin, dMax);
-  guardar();
+  save();
 });
 document.getElementById('panelSave').addEventListener('click', savePanel);
 document.getElementById('panelCancel').addEventListener('click', closePanel);
@@ -570,28 +570,28 @@ function loadSlots() {
 function renderSlots(slots) {
   var container = document.getElementById('slotsList'); container.innerHTML = '';
   var keys = Object.keys(slots).sort();
-  if (keys.length === 0) { var p = document.createElement('p'); p.className = 'slots-empty'; p.textContent = 'Ningún turno aceptado aún.'; container.appendChild(p); return; }
+  if (keys.length === 0) { var p = document.createElement('p'); p.className = 'slots-empty'; p.textContent = 'No slots accepted yet.'; container.appendChild(p); return; }
   keys.forEach(function(dateKey) {
     var hdr = document.createElement('div'); hdr.className = 'slot-date'; hdr.textContent = dateKey; container.appendChild(hdr);
     slots[dateKey].forEach(function(mins) {
       var row = document.createElement('div'); row.className = 'slot-row';
       var span = document.createElement('span'); span.className = 'slot-time';
       span.textContent = mins === -1 ? 'Flexible' : String(Math.floor(mins/60)).padStart(2,'0')+':'+String(mins%60).padStart(2,'0');
-      var btn = document.createElement('button'); btn.className = 'btn-del-slot'; btn.textContent = 'Quitar'; btn.dataset.key = dateKey; btn.dataset.mins = String(mins);
+      var btn = document.createElement('button'); btn.className = 'btn-del-slot'; btn.textContent = 'Remove'; btn.dataset.key = dateKey; btn.dataset.mins = String(mins);
       btn.addEventListener('click', function() {
         fetch('/api/slots/'+encodeURIComponent(this.dataset.key)+'?mins='+this.dataset.mins, { method:'DELETE' })
-          .then(function(){ loadSlots(); toast('Turno eliminado'); });
+          .then(function(){ loadSlots(); toast('Slot removed'); });
       });
       row.appendChild(span); row.appendChild(btn); container.appendChild(row);
     });
   });
 }
 document.getElementById('btnClearSlots').addEventListener('click', function() {
-  if (!confirm('Borrar todos los turnos?')) return;
-  fetch('/api/slots', { method:'DELETE' }).then(function(){ loadSlots(); toast('Turnos borrados'); });
+  if (!confirm('Clear all slots?')) return;
+  fetch('/api/slots', { method:'DELETE' }).then(function(){ loadSlots(); toast('Slots cleared'); });
 });
 
-// ── Historial ─────────────────────────────────────────────────
+// ── History ───────────────────────────────────────────────────
 function loadHistory() {
   fetch('/api/history').then(function(r){ return r.json(); }).then(function(data){ historyData = data; renderHistory(); }).catch(function(){});
 }
@@ -601,15 +601,15 @@ function renderHistory() {
   var filterServ = document.getElementById('filterServicio').value;
   var entries    = historyData;
 
-  // Actualizar contadores globales (sin filtro)
+  // Update global counters (unfiltered)
   var total      = historyData.length;
-  var realizados = historyData.filter(function(e){ return e.realizado; }).length;
+  var completed  = historyData.filter(function(e){ return e.realizado; }).length;
   var summary = document.getElementById('historySummary'); summary.innerHTML = '';
-  summary.appendChild(makeStat(total,             'Puedo',      false));
-  summary.appendChild(makeStat(realizados,         'Realizados', true));
-  summary.appendChild(makeStat(total-realizados,   'Pendientes', false));
+  summary.appendChild(makeStat(total,            'Accepted',  false));
+  summary.appendChild(makeStat(completed,         'Completed', true));
+  summary.appendChild(makeStat(total-completed,   'Pending',   false));
 
-  // Contador mes actual en topbar
+  // This-month counter in topbar
   var now = new Date();
   var mmNow = String(now.getMonth()+1).padStart(2,'0');
   var yyNow = String(now.getFullYear());
@@ -618,7 +618,7 @@ function renderHistory() {
   }).length;
   document.getElementById('monthCount').textContent = thisMon + ' ';
 
-  // Poblar filtros
+  // Populate filters
   var meses = {}; var servs = {};
   historyData.forEach(function(e) {
     var p = e.fecha.split('/'); var mk = p[1]+'/'+p[2];
@@ -626,22 +626,22 @@ function renderHistory() {
   });
   var selMes = document.getElementById('filterMes');
   var prevMes = selMes.value;
-  selMes.innerHTML = '<option value="">Todos los meses</option>';
+  selMes.innerHTML = '<option value="">All months</option>';
   Object.keys(meses).sort().reverse().forEach(function(mk) {
     var p = mk.split('/'); var opt = document.createElement('option'); opt.value = mk;
-    opt.textContent = MESES[parseInt(p[0])-1] + ' ' + p[1]; selMes.appendChild(opt);
+    opt.textContent = MONTHS[parseInt(p[0])-1] + ' ' + p[1]; selMes.appendChild(opt);
   });
   selMes.value = prevMes;
 
   var selServ = document.getElementById('filterServicio');
   var prevServ = selServ.value;
-  selServ.innerHTML = '<option value="">Todos los servicios</option>';
+  selServ.innerHTML = '<option value="">All services</option>';
   Object.keys(servs).sort().forEach(function(s) {
     var opt = document.createElement('option'); opt.value = s; opt.textContent = s; selServ.appendChild(opt);
   });
   selServ.value = prevServ;
 
-  // Aplicar filtros
+  // Apply filters
   if (filterMes) {
     entries = entries.filter(function(e) {
       var p = e.fecha.split('/'); return (p[1]+'/'+p[2]) === filterMes;
@@ -649,10 +649,10 @@ function renderHistory() {
   }
   if (filterServ) { entries = entries.filter(function(e){ return e.servicio === filterServ; }); }
 
-  // Render lista
+  // Render list
   var list = document.getElementById('historyList'); list.innerHTML = '';
   if (entries.length === 0) {
-    var p = document.createElement('p'); p.className = 'hist-empty'; p.textContent = 'Sin resultados.'; list.appendChild(p); return;
+    var p = document.createElement('p'); p.className = 'hist-empty'; p.textContent = 'No results.'; list.appendChild(p); return;
   }
 
   var byMonth = {};
@@ -664,21 +664,21 @@ function renderHistory() {
   Object.keys(byMonth).forEach(function(mk) {
     var parts = mk.split('/');
     var hdr = document.createElement('div'); hdr.className = 'hist-month';
-    hdr.textContent = MESES[parseInt(parts[0])-1] + ' ' + parts[1]; list.appendChild(hdr);
+    hdr.textContent = MONTHS[parseInt(parts[0])-1] + ' ' + parts[1]; list.appendChild(hdr);
     byMonth[mk].forEach(function(e) {
       var row = document.createElement('div'); row.className = 'hist-row';
       var cb = document.createElement('input'); cb.type = 'checkbox'; cb.className = 'hist-check'; cb.checked = e.realizado; cb.dataset.id = e.id;
       cb.addEventListener('change', function() {
         var checked = this.checked;
         fetch('/api/history/'+this.dataset.id, { method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({realizado:checked}) })
-          .then(function(){ loadHistory(); toast(checked ? 'Realizado' : 'Desmarcado'); });
+          .then(function(){ loadHistory(); toast(checked ? 'Completed' : 'Unmarked'); });
       });
       var info = document.createElement('div'); info.className = 'hist-info';
       var timeStr = e.mins !== null ? String(Math.floor(e.mins/60)).padStart(2,'0')+':'+String(e.mins%60).padStart(2,'0') : 'Flexible';
       info.innerHTML = '<span class="hist-service">'+e.servicio+'</span><div class="hist-date">'+e.fecha+' · '+timeStr+'</div>';
       var del = document.createElement('button'); del.className = 'hist-del'; del.textContent = '✕'; del.dataset.id = e.id;
       del.addEventListener('click', function() {
-        fetch('/api/history/'+this.dataset.id, {method:'DELETE'}).then(function(){ loadHistory(); toast('Eliminado'); });
+        fetch('/api/history/'+this.dataset.id, {method:'DELETE'}).then(function(){ loadHistory(); toast('Deleted'); });
       });
       row.appendChild(cb); row.appendChild(info); row.appendChild(del); list.appendChild(row);
     });
@@ -690,36 +690,36 @@ function makeStat(num, label, done) {
   d.innerHTML = '<div class="num">'+num+'</div><div class="lbl">'+label+'</div>'; return d;
 }
 
-// Filtros
+// Filters
 document.getElementById('filterMes').addEventListener('change', renderHistory);
 document.getElementById('filterServicio').addEventListener('change', renderHistory);
 
-// Copiar resumen del mes
+// Copy month summary
 document.getElementById('btnCopyResumen').addEventListener('click', function() {
   var filterMes = document.getElementById('filterMes').value;
   var entries = filterMes
     ? historyData.filter(function(e){ var p=e.fecha.split('/'); return (p[1]+'/'+p[2])===filterMes; })
     : historyData.filter(function(e){ var p=e.fecha.split('/'); var now=new Date(); return p[1]===String(now.getMonth()+1).padStart(2,'0') && p[2]===String(now.getFullYear()); });
 
-  if (entries.length === 0) { toast('Sin datos para copiar'); return; }
+  if (entries.length === 0) { toast('No data to copy'); return; }
   var p0 = entries[0].fecha.split('/');
-  var titulo = MESES[parseInt(p0[1])-1] + ' ' + p0[2] + ': ' + entries.length + ' masajes';
+  var titulo = MONTHS[parseInt(p0[1])-1] + ' ' + p0[2] + ': ' + entries.length + ' appointments';
   var lineas = entries.map(function(e) {
     var t = e.mins !== null ? String(Math.floor(e.mins/60)).padStart(2,'0')+':'+String(e.mins%60).padStart(2,'0') : 'flex';
     return '- ' + e.fecha + ' ' + t + ' ' + e.servicio + (e.realizado ? ' ✓' : '');
   });
   navigator.clipboard.writeText(titulo + '\n' + lineas.join('\n'))
-    .then(function(){ toast('Copiado al portapapeles'); });
+    .then(function(){ toast('Copied to clipboard'); });
 });
 
-// Agregar manual
+// Add manual entry
 var manualVisible = false;
 document.getElementById('btnAddManual').addEventListener('click', function() {
   manualVisible = !manualVisible;
   document.getElementById('addManualForm').classList.toggle('hidden', !manualVisible);
   if (manualVisible) {
     var sel = document.getElementById('manualServicio'); sel.innerHTML = '';
-    TODOS_SERVICIOS.forEach(function(s){ var o=document.createElement('option'); o.value=s; o.textContent=s; sel.appendChild(o); });
+    ALL_SERVICES.forEach(function(s){ var o=document.createElement('option'); o.value=s; o.textContent=s; sel.appendChild(o); });
     var now = new Date(); document.getElementById('manualFecha').value = now.toISOString().split('T')[0];
   }
 });
@@ -728,14 +728,14 @@ document.getElementById('btnManualCancel').addEventListener('click', function() 
 });
 document.getElementById('btnManualSave').addEventListener('click', function() {
   var fechaRaw = document.getElementById('manualFecha').value;
-  if (!fechaRaw) { toast('Falta la fecha'); return; }
+  if (!fechaRaw) { toast('Date required'); return; }
   var parts = fechaRaw.split('-');
   var fecha = parts[2]+'/'+parts[1]+'/'+parts[0];
   var horaRaw = document.getElementById('manualHora').value;
   var mins = horaRaw ? (parseInt(horaRaw.split(':')[0])*60 + parseInt(horaRaw.split(':')[1])) : null;
   var servicio = document.getElementById('manualServicio').value;
   fetch('/api/history', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({fecha:fecha, mins:mins, servicio:servicio}) })
-    .then(function(){ manualVisible=false; document.getElementById('addManualForm').classList.add('hidden'); loadHistory(); toast('Turno agregado'); });
+    .then(function(){ manualVisible=false; document.getElementById('addManualForm').classList.add('hidden'); loadHistory(); toast('Appointment added'); });
 });
 
 load();

@@ -1,7 +1,7 @@
 /**
- * bot.js — Bot WhatsApp Wellness
- * - Responde "Puedo" según días/horarios en config.json
- * - Dashboard en http://localhost:3000
+ * bot.js — WhatsApp Availability Bot
+ * - Replies "Available" based on days/hours in config.json
+ * - Dashboard at http://localhost:3000
  */
 
 const { Client, LocalAuth } = require("whatsapp-web.js");
@@ -24,7 +24,7 @@ function writeConfig(c) {
 }
 fs.watchFile(CONFIG_PATH, { interval: 1000 }, () => { _cfg = null; });
 
-// ─── HISTORIAL ────────────────────────────────────────────────
+// ─── HISTORY ──────────────────────────────────────────────────
 const HISTORY_PATH = "./history.json";
 
 function loadHistory() {
@@ -33,13 +33,13 @@ function loadHistory() {
 function saveHistory(h) {
   fs.writeFileSync(HISTORY_PATH, JSON.stringify(h, null, 2));
 }
-function registrarHistorial(dateKey, horaMinutos, servicio) {
+function logHistory(dateKey, timeMinutes, service) {
   const h = loadHistory();
   h.push({
     id:       Date.now(),
     fecha:    dateKey,
-    mins:     horaMinutos,
-    servicio: servicio || "Desconocido",
+    mins:     timeMinutes,
+    servicio: service || "Unknown",
     realizado: false,
   });
   saveHistory(h);
@@ -52,9 +52,9 @@ let _slots = null;
 function loadSlots() {
   if (_slots) return _slots;
   try { _slots = JSON.parse(fs.readFileSync(SLOTS_PATH, "utf8")); } catch { _slots = {}; }
-  // Limpiar fechas pasadas
-  const hoy = slotDateKey(new Date());
-  Object.keys(_slots).forEach(k => { if (k < hoy) delete _slots[k]; });
+  // Clean up past dates
+  const today = slotDateKey(new Date());
+  Object.keys(_slots).forEach(k => { if (k < today) delete _slots[k]; });
   saveSlots();
   return _slots;
 }
@@ -65,22 +65,22 @@ function slotDateKey(date) {
   return String(date.getDate()).padStart(2,"0") + "/" +
          String(date.getMonth()+1).padStart(2,"0") + "/" + date.getFullYear();
 }
-function slotLibre(dateKey, horaMinutos, minGap) {
-  if (horaMinutos === null) return true; // flexible: no bloqueamos
-  const ocupados = (loadSlots()[dateKey] || []);
-  return ocupados.every(t => Math.abs(t - horaMinutos) >= minGap);
+function slotFree(dateKey, timeMinutes, minGap) {
+  if (timeMinutes === null) return true; // flexible: no block
+  const booked = (loadSlots()[dateKey] || []);
+  return booked.every(t => Math.abs(t - timeMinutes) >= minGap);
 }
-function reclamarSlot(dateKey, horaMinutos) {
+function claimSlot(dateKey, timeMinutes) {
   const slots = loadSlots();
   if (!slots[dateKey]) slots[dateKey] = [];
-  slots[dateKey].push(horaMinutos !== null ? horaMinutos : -1);
+  slots[dateKey].push(timeMinutes !== null ? timeMinutes : -1);
   saveSlots();
 }
 
-// ─── CONSTANTES ───────────────────────────────────────────────
-const GROUP_NAME    = "CR Wellness 2026";
+// ─── CONSTANTS ────────────────────────────────────────────────
+const GROUP_NAME    = "Scheduling Group";
 const GROUP_TESTING = "Testing";
-const DIAS       = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
+const DAYS_SHORT    = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
 
 // ─── DASHBOARD ────────────────────────────────────────────────
 const app = express();
@@ -132,8 +132,8 @@ app.listen(3000, "127.0.0.1", () =>
   console.log("📊 Dashboard: http://localhost:3000")
 );
 
-// ─── CLIENTE WHATSAPP ─────────────────────────────────────────
-const BOT_START_TIME = Math.floor(Date.now() / 1000); // timestamp en segundos
+// ─── WHATSAPP CLIENT ──────────────────────────────────────────
+const BOT_START_TIME = Math.floor(Date.now() / 1000); // unix timestamp in seconds
 
 const client = new Client({
   authStrategy: new LocalAuth(),
@@ -141,170 +141,169 @@ const client = new Client({
 });
 
 client.on("qr", (qr) => {
-  console.log("\n📱 Escaneá este QR con tu WhatsApp:\n");
+  console.log("\n📱 Scan this QR with your WhatsApp:\n");
   qrcode.generate(qr, { small: true });
 });
 
 client.on("ready", () => {
   const cfg = readConfig();
   if (cfg.botActivo === undefined) { cfg.botActivo = false; writeConfig(cfg); }
-  console.log(`\n🤖 Bot listo — ${cfg.botActivo ? "ACTIVO" : "INACTIVO (usar !bot on para activar)"}`);
-  console.log(`📅 Disponible: ${resumenHorario(cfg)}\n`);
+  console.log(`\n🤖 Bot ready — ${cfg.botActivo ? "ACTIVE" : "INACTIVE (use !bot on to enable)"}`);
+  console.log(`📅 Schedule: ${scheduleSummary(cfg)}\n`);
 });
 
 client.on("disconnected", () => {
-  console.log("⚠️ Desconectado. Reconectando en 5s...");
+  console.log("⚠️ Disconnected. Reconnecting in 5s...");
   setTimeout(() => client.initialize(), 5000);
 });
 
-// ─── MENSAJES ─────────────────────────────────────────────────
+// ─── MESSAGES ─────────────────────────────────────────────────
 client.on("message_create", async (msg) => {
   try {
     const text = msg.body?.trim() || "";
 
-    // Ignorar mensajes anteriores al inicio del bot (evita replay al reconectar)
+    // Ignore messages sent before bot started (prevents replay on reconnect)
     if (msg.timestamp && msg.timestamp < BOT_START_TIME) return;
 
-    // Solo grupos
+    // Groups only
     const chatId = msg.from.endsWith("@g.us") ? msg.from : (msg.to || "");
     if (!chatId.endsWith("@g.us")) return;
     const chat = await msg.getChat();
 
-    // Comandos de control — solo en grupo Testing
+    // Control commands — Testing group only
     if (chat.name === GROUP_TESTING) {
       const cmd = text.toLowerCase();
       const cfg = readConfig();
-      if (cmd === "hola1") {
-        await msg.reply(cfg.botActivo ? "hola2 ✅" : "hola2 ❌");
+      if (cmd === "ping") {
+        await msg.reply(cfg.botActivo ? "pong ✅" : "pong ❌");
         return;
       }
       if (cmd === "!bot on") {
-        cfg.botActivo = true; writeConfig(cfg); await msg.reply("Bot activado");
+        cfg.botActivo = true; writeConfig(cfg); await msg.reply("Bot enabled");
         return;
       }
       if (!cfg.botActivo) {
-        // Modo test: procesa peticiones pero responde con ❌ en vez de "Puedo"
+        // Test mode: process requests but reply with ❌ instead of "Available"
         if (/petici[oó]n|request/i.test(text)) {
-          await procesarPeticion(msg, text, cfg, /* modoTest */ true);
+          await processRequest(msg, text, cfg, /* testMode */ true);
         }
         return;
       }
-      if (cmd === "!bot off")    { cfg.botActivo = false; writeConfig(cfg); await msg.reply("Bot desactivado"); return; }
-      if (cmd === "!bot estado") { await msg.reply(`Bot: Activo\n${resumenHorario(cfg)}`); return; }
+      if (cmd === "!bot off")    { cfg.botActivo = false; writeConfig(cfg); await msg.reply("Bot disabled"); return; }
+      if (cmd === "!bot status") { await msg.reply(`Bot: Active\n${scheduleSummary(cfg)}`); return; }
     }
 
     const cfg = readConfig();
     if (!cfg.botActivo) return;
     if (chat.name !== GROUP_NAME && chat.name !== GROUP_TESTING) return;
 
-    // Detectar petición
+    // Detect scheduling request
     if (!/petici[oó]n|request/i.test(text)) return;
 
-    await procesarPeticion(msg, text, cfg, /* modoTest */ false);
+    await processRequest(msg, text, cfg, /* testMode */ false);
 
   } catch (err) {
     console.error("Error:", err.message);
   }
 });
 
-// ─── PROCESAR PETICIÓN ────────────────────────────────────────
-async function procesarPeticion(msg, text, cfg, modoTest) {
-  // Ignorar si menciona a otro terapeuta con @
+// ─── PROCESS REQUEST ──────────────────────────────────────────
+async function processRequest(msg, text, cfg, testMode) {
+  // Ignore if @-mentioning another therapist
   if (msg.mentionedIds && msg.mentionedIds.length > 0) {
-    console.log("👤 Petición con @mención — dirigida a otro terapeuta, ignorando");
+    console.log("👤 Request with @mention — directed to another therapist, skipping");
     return;
   }
 
-  // Ignorar si pide terapeuta femenina
+  // Ignore if requesting a female therapist
   if (/\bfemale\b|\bmujer\b/i.test(text)) {
-    console.log("🚫 Pide terapeuta femenina — ignorando");
+    console.log("🚫 Requests female therapist — skipping");
     return;
   }
 
-  console.log(`🔔 ${modoTest ? "[TEST] " : ""}Petición: "${text.slice(0, 80)}"`);
+  console.log(`🔔 ${testMode ? "[TEST] " : ""}Request: "${text.slice(0, 80)}"`);
 
-  // Verificar servicio
-  const servicio = detectarServicio(text);
-  const permitidos = cfg.serviciosPermitidos || [];
-  console.log(`🛠️ Servicio detectado: ${servicio || "desconocido"}`);
-  if (permitidos.length > 0) {
-    if (!servicio || !permitidos.includes(servicio)) {
-      console.log(`🚫 Servicio no permitido — sin respuesta`);
-      if (modoTest) await msg.reply("❌ Servicio no permitido");
+  // Check service
+  const service  = detectService(text);
+  const allowed  = cfg.serviciosPermitidos || [];
+  console.log(`🛠️ Service detected: ${service || "unknown"}`);
+  if (allowed.length > 0) {
+    if (!service || !allowed.includes(service)) {
+      console.log(`🚫 Service not allowed — no reply`);
+      if (testMode) await msg.reply("❌ Service not allowed");
       return;
     }
   }
 
-  // Extraer fecha y hora
-  const fecha = extraerFecha(text);
+  // Extract date and time
+  const fecha = extractDate(text);
   if (!fecha) {
-    console.log("⚠️ Sin fecha reconocible — ignorando");
-    if (modoTest) await msg.reply("❌ Sin fecha reconocible");
+    console.log("⚠️ No recognizable date — skipping");
+    if (testMode) await msg.reply("❌ No recognizable date");
     return;
   }
-  const hora = extraerHora(text);
-  console.log(`📅 Fecha: ${fecha.readable} (${DIAS[fecha.diaSemana]}) | Hora: ${hora !== null ? Math.floor(hora/60)+":"+(hora%60).toString().padStart(2,"0") : "flexible"}`);
+  const hora = extractTime(text);
+  console.log(`📅 Date: ${fecha.readable} (${DAYS_SHORT[fecha.diaSemana]}) | Time: ${hora !== null ? Math.floor(hora/60)+":"+(hora%60).toString().padStart(2,"0") : "flexible"}`);
 
-  // Verificar disponibilidad
-  if (!estaDisponible(fecha, cfg, hora)) {
-    console.log("❌ No disponible — sin respuesta");
-    if (modoTest) await msg.reply("❌ No disponible ese día/horario");
+  // Check availability
+  if (!isAvailable(fecha, cfg, hora)) {
+    console.log("❌ Not available — no reply");
+    if (testMode) await msg.reply("❌ Not available that day/time");
     return;
   }
 
-  // Verificar slot libre
+  // Check slot is free
   const dateKey = slotDateKey(fecha.date);
   const minGap  = cfg.minGapMins || 90;
-  if (!slotLibre(dateKey, hora, minGap)) {
-    console.log(`⛔ Slot ocupado (gap mínimo ${minGap}min) — sin respuesta`);
-    if (modoTest) await msg.reply("❌ Slot ocupado");
+  if (!slotFree(dateKey, hora, minGap)) {
+    console.log(`⛔ Slot taken (min gap ${minGap}min) — no reply`);
+    if (testMode) await msg.reply("❌ Slot taken");
     return;
   }
 
-  if (modoTest) {
-    console.log(`🧪 Test OK — respondería "Puedo" (bot inactivo, no se reserva slot)`);
-    await msg.reply(`✅ Test OK — respondería "Puedo"\n📅 ${fecha.readable} | 🛠️ ${servicio}`);
+  if (testMode) {
+    console.log(`🧪 Test OK — would reply "Available" (bot inactive, slot not claimed)`);
+    await msg.reply(`✅ Test OK — would reply "Available"\n📅 ${fecha.readable} | 🛠️ ${service}`);
     return;
   }
 
-  // Reclamar slot ANTES del delay para evitar doble respuesta
-  reclamarSlot(dateKey, hora);
-  registrarHistorial(dateKey, hora, servicio);
+  // Claim slot BEFORE delay to prevent race conditions
+  claimSlot(dateKey, hora);
+  logHistory(dateKey, hora, service);
 
-  // Responder con delay aleatorio
+  // Reply after a random delay to appear natural
   const dMin  = cfg.delayMin ?? 2;
   const dMax  = cfg.delayMax ?? 6;
   const delay = (Math.floor(Math.random() * (dMax - dMin + 1)) + dMin) * 1000;
-  console.log(`✅ Slot reclamado — respondiendo en ${delay / 1000}s...`);
+  console.log(`✅ Slot claimed — replying in ${delay / 1000}s...`);
   setTimeout(async () => {
-    await msg.reply("Puedo");
-    console.log(`📤 "Puedo" enviado`);
+    await msg.reply("Available");
+    console.log(`📤 "Available" sent`);
   }, delay);
 }
 
-// ─── DISPONIBILIDAD ───────────────────────────────────────────
+// ─── AVAILABILITY ─────────────────────────────────────────────
 function timeToMins(str) {
   const [h, m = "0"] = str.split(":");
   return parseInt(h) * 60 + parseInt(m);
 }
 
-function estaDisponible(fecha, cfg, horaMinutos) {
+function isAvailable(fecha, cfg, timeMinutes) {
   const dd  = String(fecha.date.getDate()).padStart(2, "0");
   const mm  = String(fecha.date.getMonth() + 1).padStart(2, "0");
   const key = `${dd}/${mm}`;
 
-  // 1. Override específico para esta fecha
+  // 1. Date-specific override
   const ov = (cfg.overrides || {})[key];
   if (ov) {
     if (ov.bloqueado || ov.inactivo) {
-      console.log(`🚫 Fecha bloqueada/inactiva: ${key}`);
+      console.log(`🚫 Date blocked/inactive: ${key}`);
       return false;
     }
     if (ov.desde && ov.hasta) {
-      // Tiene horario personalizado
-      if (horaMinutos !== null) {
-        if (horaMinutos < timeToMins(ov.desde) || horaMinutos > timeToMins(ov.hasta)) {
-          console.log(`⏰ Hora fuera de rango personalizado (${ov.desde}–${ov.hasta})`);
+      if (timeMinutes !== null) {
+        if (timeMinutes < timeToMins(ov.desde) || timeMinutes > timeToMins(ov.hasta)) {
+          console.log(`⏰ Time outside custom range (${ov.desde}–${ov.hasta})`);
           return false;
         }
       }
@@ -312,19 +311,19 @@ function estaDisponible(fecha, cfg, horaMinutos) {
     }
   }
 
-  // 2. Template semanal (fallback)
-  const horario = cfg.disponible[String(fecha.diaSemana)];
-  if (!horario) return false;
-  if (horaMinutos !== null) {
-    if (horaMinutos < timeToMins(horario.desde) || horaMinutos > timeToMins(horario.hasta)) {
-      console.log(`⏰ Hora fuera de rango (${horario.desde}–${horario.hasta})`);
+  // 2. Weekly template (fallback)
+  const schedule = cfg.disponible[String(fecha.diaSemana)];
+  if (!schedule) return false;
+  if (timeMinutes !== null) {
+    if (timeMinutes < timeToMins(schedule.desde) || timeMinutes > timeToMins(schedule.hasta)) {
+      console.log(`⏰ Time outside range (${schedule.desde}–${schedule.hasta})`);
       return false;
     }
   }
   return true;
 }
 
-// ─── DETECTAR SERVICIO ────────────────────────────────────────
+// ─── DETECT SERVICE ───────────────────────────────────────────
 const SERVICIOS_KEYWORDS = {
   "Holistic":      ["holistic", "hol"],
   "Deep Tissue":   ["deep tissue", "deep"],
@@ -346,24 +345,23 @@ const WB_KEYWORDS = new Set(["hol", "deep", "cali", "aroma", "cranio", "reflex",
 const WB_COMPILED = {};
 for (const k of WB_KEYWORDS) WB_COMPILED[k] = new RegExp("\\b" + k + "\\b");
 
-function detectarServicio(text) {
+function detectService(text) {
   const lower = text.toLowerCase();
-  for (const [nombre, keywords] of Object.entries(SERVICIOS_KEYWORDS)) {
-    if (keywords.some(k => WB_KEYWORDS.has(k) ? WB_COMPILED[k].test(lower) : lower.includes(k))) return nombre;
+  for (const [name, keywords] of Object.entries(SERVICIOS_KEYWORDS)) {
+    if (keywords.some(k => WB_KEYWORDS.has(k) ? WB_COMPILED[k].test(lower) : lower.includes(k))) return name;
   }
   return null;
 }
 
-// ─── EXTRAER HORA ─────────────────────────────────────────────
-function extraerHora(text) {
-  // 1. Con emoji: 🕓11:00, ⏱️ 14h, ⏱️11.45h, 🕓12, ⏱️ ~17h
-  const m = text.match(/[🕓⏱][\uFE0F]?\s*~?\s*(\d{1,2})(?:[:\.](\d{2}))?h?\b/);
+// ─── EXTRACT TIME ─────────────────────────────────────────────
+function extractTime(text) {
+  // 1. With clock emoji: 🕓11:00, ⏱️ 14h, ⏱️11.45h, 🕓12, ⏱️ ~17h
+  const m = text.match(/[🕓⏱][️]?\s*~?\s*(\d{1,2})(?:[:\.](\d{2}))?h?\b/);
   if (m) {
     const h = parseInt(m[1]), min = parseInt(m[2] || "0");
     if (h <= 23 && min <= 59) return h * 60 + min;
   }
-  // 2. Sin emoji: busca HH:MM o HH:MMh o NNh o NN hs
-  //    (evita parsear "flexible until 15:30" como hora concreta)
+  // 2. No emoji: match HH:MM or NNh or NN hs
   if (!/[🕓⏱]/.test(text)) {
     const t = text.match(/\b(\d{1,2}):(\d{2})\b/) ||
               text.match(/\b(\d{1,2})\s*hs?\b/i);
@@ -375,7 +373,7 @@ function extraerHora(text) {
   return null;
 }
 
-// ─── EXTRAER FECHA ────────────────────────────────────────────
+// ─── EXTRACT DATE ─────────────────────────────────────────────
 const WEEKDAYS = {
   monday:1, tuesday:2, wednesday:3, thursday:4, friday:5, saturday:6, sunday:0,
   lunes:1,  martes:2,  miercoles:3, jueves:4,   viernes:5, sabado:6,  domingo:0
@@ -389,17 +387,17 @@ const MESES = {
   jan:1, feb:2, mar:3, apr:4, jun:6, jul:7, aug:8, sep:9, oct:10, nov:11, dec:12
 };
 
-const MESES_ES = ["enero","febrero","marzo","abril","mayo","junio",
-                  "julio","agosto","septiembre","octubre","noviembre","diciembre"];
+const MONTH_NAMES = ["January","February","March","April","May","June",
+                     "July","August","September","October","November","December"];
 
-function quitarAcentos(s) { return s.normalize("NFD").replace(/[\u0300-\u036f]/g, ""); }
+function stripAccents(s) { return s.normalize("NFD").replace(/[̀-ͯ]/g, ""); }
 
-function extraerFecha(text) {
-  const sinHora = text.replace(/[🕓⏱][\uFE0F]?.*$/gm, " ")
-                      .replace(/#.*$/gm, " ")           // quitar #9, # 6, #TH Lila, etc.
-                      .replace(/\d+\s*[''`´]/g, " ")      // quitar duraciones: 60', 90`, 60´
-                      .replace(/\d+\s*min\b/gi, " ");    // quitar: 30min, 60 min
-  const lower   = quitarAcentos(sinHora.toLowerCase());
+function extractDate(text) {
+  const sinHora = text.replace(/[🕓⏱][️]?.*$/gm, " ")
+                      .replace(/#.*$/gm, " ")
+                      .replace(/\d+\s*[''`´]/g, " ")
+                      .replace(/\d+\s*min\b/gi, " ");
+  const lower   = stripAccents(sinHora.toLowerCase());
   const now     = new Date(); now.setHours(0, 0, 0, 0);
 
   if (/\b(today|hoy)\b/.test(lower))       return makeResult(new Date(now));
@@ -430,15 +428,15 @@ function extraerFecha(text) {
 
 function makeResult(date) {
   return { date, diaSemana: date.getDay(),
-    readable: `${date.getDate()} de ${MESES_ES[date.getMonth()]} ${date.getFullYear()}` };
+    readable: `${date.getDate()} ${MONTH_NAMES[date.getMonth()]} ${date.getFullYear()}` };
 }
 
-// ─── RESUMEN HORARIO ──────────────────────────────────────────
-function resumenHorario(cfg) {
+// ─── SCHEDULE SUMMARY ─────────────────────────────────────────
+function scheduleSummary(cfg) {
   return Object.entries(cfg.disponible)
-    .map(([d, h]) => `${DIAS[d]} ${h.desde}–${h.hasta}`)
+    .map(([d, h]) => `${DAYS_SHORT[d]} ${h.desde}–${h.hasta}`)
     .join(", ");
 }
 
-// ─── INICIAR ──────────────────────────────────────────────────
+// ─── START ────────────────────────────────────────────────────
 client.initialize();

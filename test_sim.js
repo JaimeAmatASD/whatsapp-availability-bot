@@ -3,11 +3,24 @@
  * node test_sim.js
  */
 
-const fs = require("fs");
-
 // ── Copiar lógica de bot.js ────────────────────────────────────
 
-const cfg = JSON.parse(fs.readFileSync("./config.json", "utf8"));
+// Self-contained test config — independent of config.json
+const cfg = {
+  botActivo: true,
+  disponible: {
+    "0": { desde: "09:00", hasta: "18:00" }, // Sun
+    "1": { desde: "09:00", hasta: "13:00" }, // Mon
+    "2": { desde: "09:00", hasta: "13:00" }, // Tue
+    "3": { desde: "09:00", hasta: "18:00" }, // Wed
+  },
+  overrides: {
+    "02/04": { desde: "09:00", hasta: "18:00" }, // special extended day
+    "03/04": { bloqueado: true },                 // blocked day
+  },
+  serviciosPermitidos: ["Holistic","Deep Tissue","Facial","Body Bliss","Californian","Reflexology","Shoulders"],
+  minGapMins: 90,
+};
 
 function timeToMins(str) {
   const [h, m = "0"] = str.split(":");
@@ -87,7 +100,8 @@ const DIAS     = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
 function quitarAcentos(s) { return s.normalize("NFD").replace(/[\u0300-\u036f]/g, ""); }
 
 function extraerFecha(text) {
-  const sinHora = text.replace(/[🕓⏱][\uFE0F]?.*$/gm, " ").replace(/#\S+/g, " ");
+  const sinHora = text.replace(/[🕓⏱][\uFE0F]?.*$/gm, " ").replace(/#\S+/g, " ")
+                      .replace(/\d+\s*[''`´]/g, " ").replace(/\d+\s*min\b/gi, " ");
   const lower   = quitarAcentos(sinHora.toLowerCase());
   const now     = new Date(); now.setHours(0,0,0,0);
   if (/\b(today|hoy)\b/.test(lower)) return makeResult(new Date(now));
@@ -217,7 +231,7 @@ const { ok: ok1, fail: fail1 } = correr([
     texto: "*Petición*\nTuesday April 7 🕓9:00\nFacial\n#5 Jana" },
 
   { esperado: true,  label: "Body Bliss miércoles",
-    texto: "*request*\nWednesday April 8 🕓12:00\nBody Bliss 60'\n#2 Sofia" },
+    texto: "*request*\nWednesday 🕓12:00\nBody Bliss 60'\n#2 Sofia" },
 
   { esperado: true,  label: "Hora flexible domingo",
     texto: "*request*\nSunday April 5\nHolistic 90'\n#1 Lena" },
@@ -232,7 +246,7 @@ const { ok: ok1, fail: fail1 } = correr([
     texto: "*request*\nMonday April 20 ⏱️12h\n30' Shoulders\n#gift voucher Carolin" },
 
   { esperado: true,  label: "Miércoles con formato español",
-    texto: "*Petición*\nMiercoles 8 🕓10:00\nHolistic 60'\n#6 Irene" },
+    texto: "*Petición*\nMiercoles 🕓10:00\nHolistic 60'\n#6 Irene" },
 
   { esperado: true,  label: "Sábado 02/04 hasta 18h (override especial)",
     texto: "*request*\nSaturday April 2 🕓16:00\nHolistic 60'\n#9 Chantelle" },
